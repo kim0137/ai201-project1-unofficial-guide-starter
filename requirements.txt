@@ -7,7 +7,9 @@ requests
 beautifulsoup4
 selenium
 webdriver-manager
+groq
+gradio>=6.9.0
 
 # Query interface — uncomment whichever you use for Milestone 5:
-# gradio>=6.9.0
+
 # streamlit>=1.40.0

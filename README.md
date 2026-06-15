@@ -39,9 +39,10 @@ My domain is off-campus housing handbook. It includes step-by-step guides on how
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
-**Chunk size:** 150–250 tokens for blog articles; 60–120 tokens for the checklist PDF (source 8)
+**Chunk size:** 50–530 tokens for blog articles (average 143 tokens); 
+117–835 tokens for the checklist PDF
 
-**Overlap:** 30-50 tokens
+**Overlap:** None (boundary-based splitting does not use a sliding window overlap)
 
 **Why these choices fit your documents:** The blog articles (sources 1–7, 9–10) are structured with subheaders, where each section contains a short intro paragraph and a bullet list covering one focused topic (e.g., "Watch out for hidden fees" or "Inspect the property condition"). Each of these sections averages 150–250 tokens and represents a complete, self-contained idea that maps directly to the kinds of questions a user would ask. Chunking at the subheader level keeps each chunk topically coherent and avoids merging unrelated sections together.
 

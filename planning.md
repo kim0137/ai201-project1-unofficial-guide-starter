@@ -22,12 +22,12 @@ My domain is off-campus housing handbook. It includes step-by-step guides on how
 |---|--------|-------------|-----------------|
 | 1 | Redfin Blog | A student's guide on how to find off-campus housing | https://www.redfin.com/blog/how-to-find-off-campus-housing/  |
 | 2 | Redfin Blog | How to rent an apartment as an international student study in the USA| https://www.redfin.com/blog/international-student-renting-guide/ |
-| 3 | find my place | 9 best ways students can find off-campus housing near their university in 2026 | https://findmyplace.co/blog/find-off-campus-housing-near-university-2026/ |
-| 4 | tuition rewards | Tips for finding off-campus housing | https://www.tuitionrewards.com/newsroom/articles/570/tips-for-finding-off-campus-housing |
+| 3 | Find My Place | 9 best ways students can find off-campus housing near their university in 2026 | https://findmyplace.co/blog/find-off-campus-housing-near-university-2026/ |
+| 4 | Tuition Rewards | Tips for finding off-campus housing | https://www.tuitionrewards.com/newsroom/articles/570/tips-for-finding-off-campus-housing |
 | 5 | Apartments.com | 11 tips for first time renters | https://www.apartments.com/blog/first-time-apartment-renter-tips |
 | 6 | Texas Apartment Association | Everything you need to know about lease termination | https://www.taa.org/resources/lease-termination/ |
 | 7 | Texas Apartment Association | Explaining the process for applying for rental housing | https://www.taa.org/resources/applying-for-rental-housing/ |
-| 8 | Apartments.com | A roommate considerations checklist | `\support-docs\roommate-considerations-checklist\` |
+| 8 | Apartments.com | A roommate considerations checklist | `documents/roommate-considerations-checklist.pdf` |
 | 9 | Detb.org | Ways to save money in college | https://www.debt.org/students/college-budgeting-101/ |
 | 10 | Texas Apartment Association | A list of assisstance available when you have trouble paying rent | https://www.taa.org/resources/rental-assistance/ |
 

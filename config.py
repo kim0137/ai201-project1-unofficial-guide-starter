@@ -15,7 +15,7 @@ CHROMA_COLLECTION = "unofficial-guider-starter"
 CHROMA_PATH = "./chroma_db"
 
 # --- Retrieval ---
-N_RESULTS = 3
+N_RESULTS = 5
 
 # --- Documents ---
 DOCS_PATH = "./documents"

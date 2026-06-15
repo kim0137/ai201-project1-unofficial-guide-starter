@@ -140,7 +140,7 @@ def chunk_document(doc: dict) -> list[dict]:
       - Checklist PDF  : split at ALL CAPS category labels.
       - min_length = 80 characters: filters near-empty sections.
     """
-    min_length = 80
+    min_length = 150
     prefix = doc["filename"].replace(".pdf", "").replace(" ", "_").replace("-", "_").lower()
     lines = doc["text"].split("\n")
     chunks = []

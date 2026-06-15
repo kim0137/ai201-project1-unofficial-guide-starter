@@ -174,15 +174,14 @@ the chunk.
 
 ```mermaid
 flowchart TD
-    A[Document Ingestion\nbeautifulsoup4 / requests\npdfplumber] --> B[Chunking\nCustom Python\nby subheader / category]
+    A[Document Ingestion\npdfplumber] --> B[Chunking\nCustom Python\nby subheader / category]
     B --> C[Embedding\nsentence-transformers\nall-MiniLM-L6-v2]
     C --> D[Vector Store\nChroma]
     D --> E[Retrieval\nChroma similarity search\ntop-k = 5]
-    E --> F[Generation\nClaude API\nclaude-sonnet-4-6]
+    E --> F[Generation\nGroq API\nllama-3.3-70b-versatile]
 ```
 **Stage notes:**
-- **Ingestion:** Web sources (sources 1–7, 9–10) are fetched and parsed with `requests` +
-  `beautifulsoup4` to extract clean body text. The checklist PDF (source 8) is parsed with
+- **Ingestion:** The checklist PDF (source 8) is parsed with
   `pdfplumber`. Each document is stored with its source URL or file path as metadata.
 - **Chunking:** Blog articles are split at subheader boundaries, targeting 150–250 tokens
   per chunk. The checklist PDF is split by category label. Each chunk is tagged with
@@ -192,7 +191,7 @@ flowchart TD
 - **Retrieval:** At query time, the user's question is embedded with the same model and
   the top 5 most similar chunks are retrieved from Chroma.
 - **Generation:** Retrieved chunks are injected into a prompt as context and passed to
-  the Claude API, which generates a grounded answer.
+  the Groq + llama-3.3-70b, which generates a grounded answer.
 ---
 
 ## AI Tool Plan
@@ -213,7 +212,7 @@ flowchart TD
 | Chunking | Claude | Ingestion output format; chunking rules from the Chunking Strategy section (subheader split for blogs, category split for checklist, 150–250 token target) | Python function that takes a document dict and returns a list of chunk dicts with `text`, `token_count`, `source`, and `topic` | Print token counts for every chunk and assert none exceed 256; spot-check that subheader boundaries are respected |
 | Embedding + Vector Store | Claude | Chunk output format; model name (`all-MiniLM-L6-v2`); Chroma setup requirements | Python script that embeds all chunks and upserts them into a local Chroma collection with metadata | Query Chroma directly with a known phrase and confirm the expected chunk is in the top 3 results |
 | Retrieval | Claude | Chroma collection setup; top-k = 5; query format | Python function that takes a query string and returns the top 5 matching chunks with their text and metadata | Run all 5 evaluation questions from the Evaluation Plan and confirm the expected source appears in retrieved chunks |
-| Generation | Claude | Retrieved chunk format; system prompt specifying the assistant's role and grounding rules | Python function that formats chunks into a prompt and calls the Claude API, returning a grounded answer | Compare generated answers against expected answers in the Evaluation Plan; flag any answer that introduces facts not present in the retrieved chunks |
+| Generation | Claude | Retrieved chunk format; system prompt requiring grounded answers and source attribution; Groq API setup | Python function in `query.py` that formats chunks into a prompt and calls the Groq API, returning an answer with source citations | Compare generated answers against expected answers in the Evaluation Plan; ask one out-of-scope question and confirm the system declines |
 
 **Milestone 3 — Ingestion and chunking:**
 

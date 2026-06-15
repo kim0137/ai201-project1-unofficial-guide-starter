@@ -1,6 +1,7 @@
 import os
 from config import DOCS_PATH
 import pdfplumber
+import re
 
 # Metadata for each PDF — mirrors the Documents table in planning.md
 PDF_METADATA = {
@@ -57,6 +58,41 @@ PDF_METADATA = {
     
 }
 
+
+def clean_text(text: str) -> str:
+    """Remove PDF artifacts: page headers/footers, URLs, timestamps, short noise lines."""
+    lines = text.split("\n")
+    cleaned = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Skip empty lines
+        if not stripped:
+            continue
+        # Skip lines that are just URLs
+        if re.match(r'^https?://\S+$', stripped):
+            continue
+        # Skip page number patterns like "3/7" or "Page 3 of 7"
+        if re.match(r'^\d+/\d+$', stripped):
+            continue
+        # Skip timestamps like "6/14/26, 10:48 PM"
+        if re.match(r'^\d+/\d+/\d+,?\s+\d+:\d+\s*(AM|PM)', stripped):
+            continue
+        # Skip lines that are just a site title repeated as header (under 6 words, no period)
+        if len(stripped.split()) <= 5 and not stripped.endswith("."):
+            # keep if it looks like a real section header (will be caught by chunker)
+            # skip if it looks like a nav/banner artifact
+            if any(kw in stripped.lower() for kw in ["conference", "register", "sign up", "log in", "subscribe", "events"
+                                                       "copyright", "all rights reserved",
+                                                       "cookie", "privacy", "terms"]):
+                continue
+
+        cleaned.append(line)
+
+    return "\n".join(cleaned)
+
+
 def load_documents() -> list[dict]:
     """Load all PDF documents from the documents folder."""
     documents = []
@@ -68,11 +104,13 @@ def load_documents() -> list[dict]:
         filepath = os.path.join(DOCS_PATH, filename)
 
         with pdfplumber.open(filepath) as pdf:
-            text = "\n\n".join(
-                page.extract_text()
-                for page in pdf.pages
-                if page.extract_text()
-            )
+            # Join pages with double newline, skip pages with no text
+            raw_pages = [
+                page.extract_text() for page in pdf.pages if page.extract_text()
+            ]
+            text = "\n\n".join(raw_pages)
+
+        text = clean_text(text)
 
         metadata = PDF_METADATA.get(filename, {
             "source": filename.replace(".pdf", "").replace("_", " ").replace("-", " ").title(),
@@ -95,20 +133,15 @@ def chunk_document(doc: dict) -> list[dict]:
     Split a PDF document into chunks ready for embedding.
 
     Strategy: subheader-based splitting targeting 150-250 tokens per chunk.
-      - Blog articles  : split at section boundaries (short lines with no
-                         trailing period act as header signals)
-      - Checklist PDF  : split at category headers (ALL CAPS lines)
-      - min_length = 50 characters: filters out near-empty sections
-
-    Returns a list of dicts, each with:
-      - "text"     : the chunk text (str)
-      - "source"   : the document source name, e.g. "Redfin Blog" (str)
-      - "url"      : the original source URL (str)
-      - "topic"    : the topic tag, e.g. "finding-housing" (str)
-      - "chunk_id" : a unique identifier, e.g. "redfin_blog_0" (str)
+      - Blog articles  : split at section headers — a header is a short line
+                         (<60 chars) that doesn't end with punctuation AND
+                         is followed by body text (not another short line).
+                         This prevents bullet points from being treated as headers.
+      - Checklist PDF  : split at ALL CAPS category labels.
+      - min_length = 80 characters: filters near-empty sections.
     """
-    min_length = 50
-    prefix = doc["source"].lower().replace(" ", "_")
+    min_length = 80
+    prefix = doc["filename"].replace(".pdf", "").replace(" ", "_").replace("-", "_").lower()
     lines = doc["text"].split("\n")
     chunks = []
     current = []
@@ -116,20 +149,23 @@ def chunk_document(doc: dict) -> list[dict]:
 
     is_checklist = doc["topic"] == "roommates"
 
-    for line in lines:
-        stripped = line.strip()
+    def is_section_header(line: str, next_line: str = "") -> bool:
+        s = line.strip()
+        if not s:
+            return False
+        if is_checklist:
+            return s.isupper() and len(s) > 3
+        # For blogs: short line, no trailing punctuation, and the next line
+        # is longer (meaning this is a heading, not a bullet fragment)
+        is_short = len(s) < 60
+        no_punct = not s.endswith((".", ",", ":", "?", "↑"))
+        next_is_body = len(next_line.strip()) > 60
+        return is_short and no_punct and next_is_body
 
-        # Detect section boundary:
-        # - Checklist: ALL CAPS lines signal a new category
-        # - Blog: short lines (<60 chars) with no trailing period = header
-        is_boundary = (
-            (is_checklist and stripped.isupper() and len(stripped) > 3)
-            or
-            (not is_checklist and len(stripped) < 60 and stripped
-             and not stripped.endswith(".") and not stripped.endswith(","))
-        )
+    for i, line in enumerate(lines):
+        next_line = lines[i + 1] if i + 1 < len(lines) else ""
 
-        if is_boundary and current:
+        if is_section_header(line, next_line) and current:
             chunk_text = "\n".join(current).strip()
             if len(chunk_text) >= min_length:
                 chunks.append({
@@ -166,14 +202,13 @@ if __name__ == "__main__":
     for doc in docs:
         chunks = chunk_document(doc)
         all_chunks.extend(chunks)
-        print(f"\n{doc['source']}: {len(chunks)} chunks")
+        print(f"{doc['source']}: {len(chunks)} chunks")
 
     print(f"\nTotal chunks: {len(all_chunks)}")
 
-    # Print 5 samples to inspect
     import random
     print("\n── 5 random chunks ──")
     for chunk in random.sample(all_chunks, min(5, len(all_chunks))):
         print(f"\n[{chunk['chunk_id']} | {chunk['topic']}]")
-        print(chunk["text"][:300])
+        print(chunk["text"][:400])
         print("---")

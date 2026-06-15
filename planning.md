@@ -40,15 +40,13 @@ My domain is off-campus housing handbook. It includes step-by-step guides on how
      numbers fit the structure of your documents.
      A review-heavy corpus warrants different chunking than a long FAQ. -->
 
-**Chunk size:** 150–250 tokens for blog articles; 60–120 tokens for the checklist PDF (source 8)
+**Chunk size:** 150–250 tokens
 
-**Overlap:** 30-50 tokens
+**Overlap:** None. Because the implementation uses boundary-based splitting at subheader boundaries rather than a sliding window, so overlap does not apply.
 
-**Reasoning:** The blog articles (sources 1–7, 9–10) are structured with subheaders, where each section contains a short intro paragraph and a bullet list covering one focused topic (e.g., "Watch out for hidden fees" or "Inspect the property condition"). Each of these sections averages 150–250 tokens and represents a complete, self-contained idea that maps directly to the kinds of questions a user would ask. Chunking at the subheader level keeps each chunk topically coherent and avoids merging unrelated sections together.
+**Reasoning:** The blog articles (sources 1–7, 9–10) are structured with subheaders, where each section contains a short intro paragraph and a bullet list covering one focused topic (e.g., "Watch out for hidden fees" or "Inspect the property condition"). Each of these sections averages 143 tokens and represents a complete, self-contained idea that maps directly to the kinds of questions a user would ask. Chunking at the subheader level keeps each chunk topically coherent and avoids merging unrelated sections together.
 
 The roommate considerations checklist PDF (source 8) is already pre-divided into labeled categories (e.g., Lifestyle, Chores, Guests/Visitors, Pets, Parking). Each category is chunked as a unit, keeping the "ask yourself" and "ask your potential roommate" questions for the same category together. This preserves the self-reflection and conversation-starter pairing that makes the checklist useful as a retrieval result.
-
-An overlap of 30–50 tokens (~1–2 sentences or the final bullet of the preceding section) handles cases where a closing sentence in one section introduces the next topic, ensuring no bridging context is lost between chunks.
 
 Each chunk will be tagged with its source URL (or file path for source 8) and a topic label (e.g., `budgeting`, `lease`, `roommates`, `scams`) at ingestion time to improve retrieval precision and avoid returning duplicate chunks from the same domain.
 ---
@@ -128,8 +126,7 @@ flowchart TD
     E --> F[Generation\nGroq API\nllama-3.3-70b-versatile]
 ```
 **Stage notes:**
-- **Ingestion:** The checklist PDF (source 8) is parsed with
-  `pdfplumber`. Each document is stored with its source URL or file path as metadata.
+- **Ingestion:** The checklist PDF (source 8) is parsed with `pdfplumber`. Each document is stored with its source URL or file path as metadata.
 - **Chunking:** Blog articles are split at subheader boundaries, targeting 150–250 tokens per chunk. The checklist PDF is split by category label. Each chunk is tagged with
   `source`, `url`, and `topic` metadata.
 - **Embedding:** Chunks are embedded using `all-MiniLM-L6-v2` via `sentence-transformers`and stored as vectors in Chroma.
@@ -157,8 +154,17 @@ flowchart TD
 | Retrieval | Claude | Chroma collection setup; top-k = 5; query format | Python function that takes a query string and returns the top 5 matching chunks with their text and metadata | Run all 5 evaluation questions from the Evaluation Plan and confirm the expected source appears in retrieved chunks |
 | Generation | Claude | Retrieved chunk format; system prompt requiring grounded answers and source attribution; Groq API setup | Python function in `query.py` that formats chunks into a prompt and calls the Groq API, returning an answer with source citations | Compare generated answers against expected answers in the Evaluation Plan; ask one out-of-scope question and confirm the system declines |
 
-**Milestone 3 — Ingestion and chunking:**
+**Milestone 3 — Ingestion and chunking:** Claude generated the initial `ingest.py`
+using a fixed character splitter. I redirected it to use subheader boundary detection
+and added `clean_text()` after finding PDF artifacts in the chunk output.
 
-**Milestone 4 — Embedding and retrieval:**
+**Milestone 4 — Embedding and retrieval:** Claude generated `embed.py` and the
+retrieval function in `query.py` from the Chroma setup requirements and pipeline
+diagram. I debugged a duplicate chunk ID error caused by multiple PDFs sharing the
+same source name, and fixed it by switching the chunk ID prefix to use filename
+instead of source name.
 
-**Milestone 5 — Generation and interface:**
+**Milestone 5 — Generation and interface:** Claude generated `build_prompt()` and
+`app.py`. I removed the source-listing instruction from the prompt after finding it
+caused duplicate attribution output, since source metadata is already appended
+programmatically by the pipeline.

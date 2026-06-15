@@ -39,16 +39,13 @@ My domain is off-campus housing handbook. It includes step-by-step guides on how
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
-**Chunk size:** 50–530 tokens for blog articles (average 143 tokens); 
-117–835 tokens for the checklist PDF
+**Chunk size:** 150–250 tokens
 
 **Overlap:** None (boundary-based splitting does not use a sliding window overlap)
 
 **Why these choices fit your documents:** The blog articles (sources 1–7, 9–10) are structured with subheaders, where each section contains a short intro paragraph and a bullet list covering one focused topic (e.g., "Watch out for hidden fees" or "Inspect the property condition"). Each of these sections averages 150–250 tokens and represents a complete, self-contained idea that maps directly to the kinds of questions a user would ask. Chunking at the subheader level keeps each chunk topically coherent and avoids merging unrelated sections together.
 
 The roommate considerations checklist PDF (source 8) is already pre-divided into labeled categories (e.g., Lifestyle, Chores, Guests/Visitors, Pets, Parking). Each category is chunked as a unit, keeping the "ask yourself" and "ask your potential roommate" questions for the same category together. This preserves the self-reflection and conversation-starter pairing that makes the checklist useful as a retrieval result.
-
-An overlap of 30–50 tokens (~1–2 sentences or the final bullet of the preceding section) handles cases where a closing sentence in one section introduces the next topic, ensuring no bridging context is lost between chunks.
 
 Each chunk will be tagged with its source URL (or file path for source 8) and a topic label (e.g., `budgeting`, `lease`, `roommates`, `scams`) at ingestion time to improve retrieval precision and avoid returning duplicate chunks from the same domain.
 
@@ -64,7 +61,7 @@ Each chunk will be tagged with its source URL (or file path for source 8) and a 
      Consider: context length limits, multilingual support, accuracy on domain-specific text,
      latency, and local vs. API-hosted. -->
 
-**Model used:** `all-MiniLM-L6-v2`
+**Model used:** `all-MiniLM-L6-v2` via `sentence-transformers`
 
 **Top-k:** 5
 
@@ -161,7 +158,7 @@ that exists in the Redfin PDF.
 
 ## Spec Reflection
 
-**One way the spec helped:** The chunking strategy section of planning.md directly 
+**One way the spec helped:** The chunking strategy section of `planning.md` directly 
 shaped the implementation. Deciding upfront to split at subheader boundaries rather 
 than fixed character windows meant the chunks matched the natural topic structure of 
 the blog articles, which is why queries 3 and 4 retrieved well with distance scores 
@@ -171,7 +168,7 @@ under 0.6.
 BeautifulSoup for web ingestion. During implementation, Redfin and other sites 
 blocked automated scraping with anti-bot detection, so the pipeline was changed to 
 PDF-only ingestion using pdfplumber. The architecture diagram and AI Tool Plan in 
-planning.md were updated to reflect this before continuing.
+`planning.md` were updated to reflect this before continuing.
 
 ---
 
